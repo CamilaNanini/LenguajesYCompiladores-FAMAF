@@ -1,0 +1,104 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish]{babel}
+\usepackage{amsmath, amssymb, amsthm}
+
+\title{Resumen de Definiciones: El Significado de la Recursión}
+\author{}
+\date{}
+
+\newtheorem{definition}{Definición}
+
+\begin{document}
+
+\maketitle
+
+\section{Teoría de Órdenes Parciales}
+
+\begin{definition}[Orden Parcial / Poset]
+Un conjunto $X$ junto con una relación $\le$ es un \textit{poset} si la relación es reflexiva, antisimétrica y transitiva.
+\end{definition}
+
+\begin{definition}[Orden Discreto]
+Es el orden parcial definido por la relación de igualdad ($x \le y \iff x = y$).
+\end{definition}
+
+\begin{definition}[Lifting]
+Dado un poset $X$, su lifting $X_{\perp}$ se define como $X \cup \{\perp\}$, donde el nuevo orden satisface $x \le y$ si $x = \perp$ o $x \le_X y$.
+\end{definition}
+
+\begin{definition}[Orden Llano]
+Se obtiene al aplicar el \textit{lifting} a un conjunto con orden discreto.
+\end{definition}
+
+\begin{definition}[Orden en Espacio de Funciones]
+Dadas funciones $f, g: X \to Y$, se define $f \le g$ si y solo si $\forall x \in X, f(x) \le_Y g(x)$.
+\end{definition}
+
+\section{Espacios de Funciones y sus Propiedades de Orden}
+
+\begin{definition}[Espacio Ordenado de Funciones]
+Si $(Y, \le_Y)$ es un orden parcial y $X$ es un conjunto, el espacio de funciones de $X \to Y$ es un orden parcial donde la relación de orden entre dos funciones $f, g \in X \to Y$ está definida de manera puntual:
+\begin{equation}
+    f \le g \iff \forall x \in X, f(x) \le_Y g(x)
+\end{equation}
+.
+\end{definition}
+
+\begin{definition}[Preservación de Estructura]
+El espacio de funciones hereda las propiedades de estructura del codominio:
+\begin{itemize}
+    \item Si $Y$ es un \textbf{predominio}, entonces el espacio de funciones $X \to Y$ también es un predominio.
+    \item Si $D$ es un \textbf{dominio}, entonces $X \to D$ también lo es. En este caso, el elemento mínimo del espacio de funciones es la función constante que devuelve $\perp$ para toda entrada.
+\end{itemize}
+\end{definition}
+
+\begin{definition}[Funciones Parciales y Orden]
+Las funciones parciales de $X \rightharpoonup Y$ pueden ordenarse mediante la contención de sus gráficos (vistas como subconjuntos de $P(X \times Y)$), lo cual es equivalente a decir que $f \le g$ si siempre que $f(x)$ está definido, entonces $g(x)$ también lo está y $f(x) = g(x)$. Esta noción se formaliza mediante la totalización de funciones en el espacio $X \to Y_{\perp}$.
+\end{definition}
+
+\section{Cadenas y Supremos}
+
+\begin{definition}[Supremo]
+El supremo de un subconjunto $Q \subseteq P$ es el elemento $sup(Q) \in P$ que es cota superior de $Q$ y es menor o igual que cualquier otra cota superior de $Q$.
+\end{definition}
+
+\begin{definition}[Cadena]
+Una secuencia infinita de elementos $p_0 \le p_1 \le p_2 \le \dots$. 
+\begin{itemize}
+    \item \textbf{Interesante}: Si el conjunto de sus elementos es infinito.
+    \item \textbf{No interesante}: Si el conjunto es finito (se vuelve constante a partir de un punto).
+\end{itemize}
+\end{definition}
+
+\section{Predominios y Dominios}
+
+\begin{definition}[Predominio]
+Un orden parcial $P$ es un predominio si toda cadena en $P$ tiene supremo. Equivalentemente, si toda cadena interesante tiene supremo.
+\end{definition}
+
+\begin{definition}[Dominio]
+Es un predominio que posee un elemento mínimo (generalmente denotado como $\perp$).
+\end{definition}
+
+\section{Funciones y Morfismos}
+
+\begin{definition}[Monotonía]
+Una función $f: P \to Q$ es monótona si preserva el orden: $x \le_P y \implies f(x) \le_Q f(y)$.
+\end{definition}
+
+\begin{definition}[Continuidad]
+Una función es continua si es monótona y preserva el supremo de las cadenas interesantes.
+\end{definition}
+
+\begin{definition}[Función Estricta]
+Una función $f$ es estricta si preserva el elemento mínimo, es decir, $f(\perp) = \perp$.
+\end{definition}
+
+\section{Puntos Fijos}
+
+\begin{definition}[Teorema del Menor Punto Fijo]
+Sea $D$ un dominio y $F: D \to D$ una función continua. Entonces existe el menor punto fijo de $F$, el cual es el supremo de la cadena $\perp \le F(\perp) \le F^2(\perp) \le \dots$.
+\end{definition}
+
+\end{document}
