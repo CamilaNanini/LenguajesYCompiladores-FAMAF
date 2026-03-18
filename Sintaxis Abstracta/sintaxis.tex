@@ -7,6 +7,7 @@
 \usepackage{graphicx}
 \usepackage{amssymb}
 \usepackage{stmaryrd}
+\usepackage{tcolorbox}
 \geometry{margin=2.5cm}
 
 \title{Resumen: Sintaxis Abstracta y Semántica}
@@ -100,6 +101,21 @@ Actualización de estados: definimos la siguiente operación sobre estados. Sea 
 [\sigma | v : n]w \quad = \quad \text{si } (w = v) \text{ entonces } n \text{ sino } \sigma w
 \] (pregunta por $w$)
 
+\begin{tcolorbox}[title=Notaciones de autora]
+\noindent La fun semántica $\llbracket x+5 \rrbracket_\sigma$ si se tiene $x + 5$ por sí sola no vale nada.
+
+\begin{itemize}
+    \item[$\hookrightarrow$] \textbf{Estado $\sigma$:} memoria, valor de cada variable.
+    \item[$\hookrightarrow$] \textbf{función:} dado un estado $\sigma$ devuelve un número entero.
+    \item[$\hookrightarrow$] $\llbracket \cdot \rrbracket$: separa el mundo del código (sintaxis) del mundo de los números (semántica).
+\end{itemize}
+
+\medskip
+
+\noindent $\llbracket e \rrbracket \sigma$: El valor de la expresión $e$ evaluada bajo el estado $\sigma$.
+
+\noindent $[\sigma | v : n] \to$ nuevo estado, casi idéntico a $\sigma$ pero $v$ ahora vale $n$.
+\end{tcolorbox}
 \section{Expresiones Booleanas}
 
 Se define:
@@ -183,7 +199,24 @@ Intuitivamente podemos pensar que una sustitución se propaga por toda la estruc
 
 Ocurre cuando una variable libre pasa a estar ligada tras una sustitución.
 
-Solución: \textbf{renombrar variables} antes de sustituir.
+Una solución es renombrar la variable ligada y luego sustituir. Otra posibilidad es hacer las dos cosas simultáneamente. Si bien es más complicado, es lógico hacerlo así ya que estamos definiendo justamente la sustitución. Definimos entonces, para $Q = \forall, \exists$:
+
+\[
+(Qv. b) / \delta = Qv_{new} . (b / [\delta | v : v_{new}])
+\]
+
+donde $v_{new}$ es una variable \textit{nueva} y $[\delta | v : v_{new}]$ ya se definió: sustituye parecido a $\delta$, salvo que a la variable $v$ la reemplaza por $v_{new}$. Si no elegimos cuidadosamente a $v_{new}$, el problema de la captura persiste. 
+
+Para finalizar, entonces, tenemos las ecuaciones
+\begin{align*}
+    (\forall v . \ b) / \delta &= \forall v_{new} . \ (b / [\delta | v : v_{new}]) \text{ donde } v_{new} \notin \bigcup_{w \in FV(b) - \{v\}} FV(\delta w) \tag{Nota 1}\\
+    (\exists v . \ b) / \delta &= \exists v_{new} . \ (b / [\delta | v : v_{new}]) \text{ donde } v_{new} \notin \bigcup_{w \in FV(b) - \{v\}} FV(\delta w)
+\end{align*}
+
+\begin{tcolorbox}[title=Notaciones de autora]
+    Nota 1: Intuitivamente $(b / [\delta | v : v_{new}])$ es: Hacé todos los reemplazos que decía $\delta$ pero si encontrás a $v$ dentro de $b$, cambiala por $v_{new}$. 
+    Además $v_{new}$ no debe de estar en el conjunto de variables libres de las expresiones que sustituyen a las variables libres de $b$ distintas de $v$ es para evitar el problema de captura.
+\end{tcolorbox}
 
 \section{Propiedades Semánticas}
 
@@ -217,7 +250,7 @@ Para la prueba de las mismas, debemos recurrir a propiedades más generales.
 \noindent \textit{Teorema de Sustitución (TS).} Si aplico la sustitución $\delta$ a $p$ y luego evalúo en el estado $\sigma$, puedo obtener el mismo resultado a partir de $p$ sin sustituir si evalúo en un estado que hace el trabajo de $\delta$ y de $\sigma$ (en las variables libres de $p$). En símbolos:
 \[
 (\forall w \in FV(p) \ldotp \llbracket \delta w \rrbracket \sigma = \sigma' w) \implies \llbracket p / \delta \rrbracket \sigma = \llbracket p \rrbracket \sigma'
-\]
+\tag{Nota 2} \] 
 
 \noindent \textit{Abreviatura.} Si consideramos $id$ como la sustitución identidad, que mapea cada variable $v$ en la expresión $v$, entonces escribiremos $v_0 \to e_0, \dots, v_{n-1} \to e_{n-1}$ para abreviar $[id | v_0 : e_0 | \dots | v_{n-1} : e_{n-1}]$.
 
@@ -227,5 +260,28 @@ Para la prueba de las mismas, debemos recurrir a propiedades más generales.
 \[
 \llbracket p / v_0 \to e_0, \dots, v_{n-1} \to e_{n-1} \rrbracket \sigma = \llbracket p \rrbracket [\sigma | v_0 : \llbracket e_0 \rrbracket \sigma | \dots | v_{n-1} : \llbracket e_{n-1} \rrbracket \sigma]
 \]
+
+\begin{tcolorbox}[title=Notaciones de autora]
+\begin{itemize}
+    \item Nota 2: $\forall$ variable $w$ que sea libre en $p$, si el valor de la expresión que sustituye a $w$ ($\delta w$) evaluada en el estado $\sigma$ es igual al valor que el estado $\sigma'$ le asigna a $w$, $\longrightarrow$ el significado de $p$ tras aplicarle la sustitución $\delta$ y evaluarla en el estado $\sigma$ es lo mismo que evaluar $p$ en el estado $\sigma'$.
+    \item \noindent \textbf{Ej:} $p = x + 10$, \quad $x \to y * 2$, \quad $\sigma(y) = 3$
+
+\medskip
+
+\noindent \textbf{camino 1:} 
+$\llbracket p/\delta \rrbracket \sigma \to (x+10) \to ((y*2)+10) \to \llbracket (3*2) + 10 \rrbracket = 16$
+
+\medskip
+
+\noindent \textbf{camino 2:} Crear $\sigma'$ donde $x$ tenga el valor procesado:
+\begin{align*}
+    \therefore \sigma'(x) &= \llbracket (y*2) \rrbracket \sigma \\
+    \therefore \sigma'(x) &= 6
+\end{align*}
+
+\noindent $\therefore \llbracket x + 10 \rrbracket \sigma' = \llbracket 6 + 10 \rrbracket = 16$
+\end{itemize}
+\end{tcolorbox}
+
 
 \end{document}
