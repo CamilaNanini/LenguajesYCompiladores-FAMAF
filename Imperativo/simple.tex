@@ -1,0 +1,189 @@
+\documentclass[a4paper,11pt]{article}
+\usepackage[spanish]{babel}
+\usepackage{amsmath, amssymb}
+\usepackage{graphicx}
+\usepackage[utf8]{inputenc}
+\usepackage{amsfonts}
+\usepackage{stmaryrd}
+
+\title{Resumen: Lenguaje Imperativo Simple (LIS)}
+\author{}
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\section{Lenguaje Imperativo Simple (LIS)}
+
+\subsection{Gramática abstracta}
+
+\includegraphics[width=1\textwidth]{./gramaticaAbstractaLIS}
+
+\subsection{Estados}
+
+\[
+\Sigma = \text{Var} \to \mathbb{Z}
+\]
+
+Un estado es una función que asigna a cada variable un entero.
+
+\section{Funciones semánticas}
+
+\begin{align*}
+[\![\cdot]\!]_{intexp} &: \langle intexp \rangle \to (\Sigma \to \mathbb{Z}) \\
+[\![\cdot]\!]_{boolexp} &: \langle boolexp \rangle \to (\Sigma \to \{V,F\}) \\
+[\![\cdot]\!]_{comm} &: \langle comm \rangle \to (\Sigma \to \Sigma)
+\end{align*}
+\text{Todos los comandos terminan en su ejecución y su "resultado" es un nuevo estado}
+
+\section{Problema de la iteración}
+
+\subsection{No terminación}
+
+Se introduce:
+\[
+\Sigma_\bot = \Sigma \cup \{\bot\}
+\]
+
+\subsection{Nuevo tipo semántico}
+
+\[
+[\![\cdot]\!] : \langle comm \rangle \to (\Sigma \to \Sigma_\bot)
+\]
+
+\section{Extensión estricta}
+
+Dada una $f \in P \to D$, donde $P$ es un predominio y $D$ un dominio, se denota por $f_{\bot\bot}$ la única extensión estricta de $f$ a $P_{\bot}$. Así, $f_{\bot\bot} \in P_{\bot} \to D$ está definida por:
+
+$$f_{\bot\bot} \, x = 
+\begin{cases} 
+\bot & \text{si } x = \bot \\
+f \, x & \text{si no}
+\end{cases}$$
+
+\section{Resumen de llaves semanticas}
+
+\subsection*{Expresiones Enteras}
+$\llbracket \cdot \rrbracket \in \langle intexp \rangle \rightarrow \Sigma \rightarrow \mathbb{Z}$
+\begin{align*}
+    \llbracket 0 \rrbracket \sigma &= 0 \\
+    \llbracket -e \rrbracket \sigma &= -\llbracket e \rrbracket \sigma \\
+    \llbracket e_0 + e_1 \rrbracket \sigma &= \llbracket e_0 \rrbracket \sigma + \llbracket e_1 \rrbracket \sigma \quad \text{(similarmente para $-, *, \dots$)} \\
+    \llbracket v \rrbracket \sigma &= \sigma \, v
+\end{align*}
+
+\subsection*{Expresiones Booleanas}
+$\llbracket \cdot \rrbracket \in \langle boolexp \rangle \rightarrow \Sigma \rightarrow \mathbb{B}$
+\begin{align*}
+    \llbracket \text{true} \rrbracket \sigma &= V \\
+    \llbracket \text{false} \rrbracket \sigma &= F \\
+    \llbracket e_0 = e_1 \rrbracket \sigma &= \llbracket e_0 \rrbracket \sigma = \llbracket e_1 \rrbracket \sigma \quad \text{(similarmente para $<, >, \dots$)} \\
+    \llbracket \neg b \rrbracket \sigma &= \neg \llbracket b \rrbracket \sigma \\
+    \llbracket b_0 \wedge b_1 \rrbracket \sigma &= \llbracket b_0 \rrbracket \sigma \wedge \llbracket b_1 \rrbracket \sigma \quad \text{(similarmente para $\vee, \dots$)}
+\end{align*}
+
+\subsection*{Comandos}
+$\llbracket \cdot \rrbracket \in \langle comm \rangle \rightarrow \Sigma \rightarrow \Sigma_\perp$
+\begin{align*}
+    \llbracket \text{skip} \rrbracket \sigma &= \sigma \\
+    \llbracket v := e \rrbracket \sigma &= [\sigma | v : \llbracket e \rrbracket \sigma] \\
+    \llbracket \text{if } b \text{ then } c_0 \text{ else } c_1 \rrbracket \sigma &= 
+    \begin{cases} 
+        \llbracket c_0 \rrbracket \sigma & \text{si } \llbracket b \rrbracket \sigma \\ 
+        \llbracket c_1 \rrbracket \sigma & \text{si no} 
+    \end{cases} \\
+    \llbracket c_0; c_1 \rrbracket \sigma &= \llbracket c_1 \rrbracket_\perp (\llbracket c_0 \rrbracket \sigma) \\
+    \llbracket \text{newvar } v := e \text{ in } c \rrbracket \sigma &= (\lambda \sigma' \in \Sigma. [\sigma' | v : \sigma \, v])_\perp (\llbracket c \rrbracket [\sigma | v : \llbracket e \rrbracket \sigma]) \\
+    \llbracket \text{while } b \text{ do } c \rrbracket &= \bigsqcup_{i=0}^{\infty} F^i \perp_{\Sigma \rightarrow \Sigma_\perp}
+\end{align*}
+
+\noindent donde:
+\begin{align*}
+    f_{\perp\perp} x &= \begin{cases} \perp & \text{si } x = \perp \\ f \, x & \text{si no} \end{cases} \\
+    F \, w \, \sigma &= \begin{cases} w_{\perp\perp} (\llbracket c \rrbracket \sigma) & \text{si } \llbracket b \rrbracket \sigma \\ \sigma & \text{si no} \end{cases}
+\end{align*}
+
+\section{Propiedades}
+
+\subsection{Variables libres}
+
+\begin{align*}
+FV(\texttt{skip}) &= \emptyset \\
+FV(v := e) &= \{v\} \cup FV(e) \\
+FV(c_0 ; c_1) &= FV(c_0) \cup FV(c_1) \\
+FV(\texttt{if } b \texttt{ then } c_0 \texttt{ else } c_1) &= FV(b) \cup FV(c_0) \cup FV(c_1) \\
+FV(\texttt{while } b \texttt{ do } c) &= FV(b) \cup FV(c) \\
+FV(\texttt{newvar } v := e \texttt{ in } c) &= FV(e) \cup (FV(c) - \{v\})
+\end{align*}
+
+\subsection{Variables asignables}
+
+\begin{align*}
+FA(\texttt{skip}) &= \emptyset \\
+FA(v := e) &= \{v\} \\
+FA(c_0 ; c_1) &= FA(c_0) \cup FA(c_1) \\
+FA(\texttt{if } b \texttt{ then } c_0 \texttt{ else } c_1) &= FA(c_0) \cup FA(c_1) \\
+FA(\texttt{while } b \texttt{ do } c) &= FA(c) \\
+FA(\texttt{newvar } v := e \texttt{ in } c) &= FV(c) - \{v\}
+\end{align*}
+
+\subsection{Teorema de Coincidencia}
+
+Si dos estados $\sigma$ y $\sigma'$ coinciden en las variables libres de $c$, entonces da lo mismo evaluar $c$ en $\sigma$ o $\sigma'$.
+
+El enunciado correcto del \textbf{Teorema de Coincidencia} es:
+\begin{enumerate}
+    \item $(\forall w \in FV(c). \sigma w = \sigma' w)$ implica,
+    \begin{itemize}
+        \item o bien $\llbracket c \rrbracket \sigma = \bot = \llbracket c \rrbracket \sigma'$,
+        \item o bien $\llbracket c \rrbracket \sigma \neq \bot \neq \llbracket c \rrbracket \sigma'$ y $\forall w \in FV(c). \llbracket c \rrbracket \sigma w = \llbracket c \rrbracket \sigma' w$
+    \end{itemize}
+    \item Si $\llbracket c \rrbracket \sigma \neq \bot$, entonces $\forall w \notin FA(c). \llbracket c \rrbracket \sigma w = \sigma w$.
+\end{enumerate}
+
+\subsection{Teorema de Renombre}
+Otra propiedad que cobra importancia en el lenguaje imperativo es la que establece que no importa el nombre de las variables utilizadas en las declaraciones de variables locales (o sea las ligadas):
+
+$$u \notin FV(c) - \{v\} \Rightarrow \llbracket \textbf{newvar } u := e \textbf{ in } c[v \to u] \rrbracket = \llbracket \textbf{newvar } v := e \textbf{ in } c \rrbracket$$
+
+\section{Sustituciones}
+Conjunto de sustituciones
+\[
+\Delta = \text{Var} \to \text{Var}
+\]
+
+Las ecuaciones que la definían para la lógica de predicados siguen valiendo (salvo el caso de los cuantificadores, que ahora no tenemos). Ahora se agregan ecuaciones para los comandos.
+
+$$\_ / \_ \in \langle comm \rangle \times \Delta \to \langle comm \rangle$$
+
+\begin{align*}
+    \textbf{skip} / \delta &= \textbf{skip} \\
+    (v := e) / \delta &= (\delta v) := (e / \delta) \\
+    (c_0 ; c_1) / \delta &= (c_0 / \delta) ; (c_1 / \delta) \\
+    (\textbf{if } b \textbf{ then } c_0 \textbf{ else } c_1) / \delta &= \textbf{if } b / \delta \textbf{ then } c_0 / \delta \textbf{ else } c_1 / \delta \\
+    (\textbf{while } b \textbf{ do } c) / \delta &= \textbf{while } b / \delta \textbf{ do } c / \delta
+\end{align*}
+
+El caso del \textbf{newvar} tiene los mismos inconvenientes que los cuantificadores, ahora es un poco más simple ya que $\delta w$ son siempre variables.
+
+$$(\textbf{newvar } v := e \textbf{ in } c) / \delta = \textbf{newvar } v_{new} := e / \delta \textbf{ in } (c / [\delta | v : v_{new}])$$
+
+donde $v_{new} \notin \{ \delta w | w \in FV(c) - \{v\} \}$
+
+\subsection{Teorema de Sustitución}
+
+Si $\delta$ es inyectiva sobre $FV(c)$ y $\forall w \in FV(c). \ \sigma(\delta w) = \sigma' w$, entonces
+\begin{itemize}
+    \item o bien $\llbracket c/\delta \rrbracket \sigma = \bot = \llbracket c \rrbracket \sigma'$,
+    \item o bien $\llbracket c/\delta \rrbracket \sigma \neq \bot \neq \llbracket c \rrbracket \sigma'$ y $\forall w \in FV(c). \ \llbracket c/\delta \rrbracket \sigma(\delta w) = \llbracket c \rrbracket \sigma' w$.
+\end{itemize}
+
+\subsection{Lema de Sustitución}
+Sea $FV(c) \subseteq V \subseteq \langle var \rangle$ tal que $\delta$ es inyectiva sobre $V$ y $\forall w \in V. \ \sigma(\delta w) = \sigma' w$. Entonces,
+\begin{itemize}
+    \item o bien $\llbracket c/\delta \rrbracket \sigma = \bot = \llbracket c \rrbracket \sigma'$,
+    \item o bien $\llbracket c/\delta \rrbracket \sigma \neq \bot \neq \llbracket c \rrbracket \sigma'$ y $\forall w \in V. \ \llbracket c/\delta \rrbracket \sigma(\delta w) = \llbracket c \rrbracket \sigma' w$.
+\end{itemize}
+
+\end{document}
