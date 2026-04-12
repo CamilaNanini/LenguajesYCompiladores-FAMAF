@@ -1,0 +1,306 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish]{babel}
+\usepackage{amsmath}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{mathtools}
+\usepackage{tcolorbox}
+\usepackage{amsmath}   % Para \stackrel y fórmulas avanzadas
+\usepackage{amssymb}   % Para símbolos matemáticos adicionales
+\usepackage[spanish]{babel}
+
+\lstset{
+    basicstyle=\small\ttfamily,
+    breaklines=true,
+    frame=single,
+    showstringspaces=false,
+    commentstyle=\color{gray}
+}
+
+\begin{document}
+
+\title{Resumen de Modelado de Procesos y LTSA}
+\maketitle
+
+\section{Procesos y Recursión}
+Un proceso se define mediante una acción seguida de un prefijo (\texttt{->}). La recursión se logra simplemente llamando al nombre del proceso al final.
+
+\begin{lstlisting}
+
+// Un interruptor con estado
+INTERRUPTOR = OFF,
+OFF = (on -> ON),
+ON  = (off -> OFF).
+\end{lstlisting}
+
+\section{Elecciones (Choice)}
+El operador \texttt{|} permite al proceso elegir entre diferentes acciones.
+\begin{itemize}
+    \item \textbf{Determinista:} El entorno decide basándose en etiquetas distintas.
+    \texttt{BEBIDA = (te -> BEBIDA | cafe -> BEBIDA).}
+    \item \textbf{No determinista:} El sistema elige internamente si hay etiquetas iguales.
+    \texttt{MONEDA = (lanzar -> cara -> STOP | lanzar -> cruz -> STOP).}
+\end{itemize}
+
+\section{Procesos y Acciones Indexados}
+Para evitar repetir código cuando tienes múltiples elementos similares, usas rangos [i:R].
+\begin{lstlisting}
+const N = 3
+LECTOR = (leer[i:0..N] -> LECTOR).
+FILA[i:0..N] = (entrar[i] -> salir[i] -> FILA[i]).
+\end{lstlisting}
+
+\section{Composición de Procesos}
+Para que dos o más procesos corran en paralelo, usamos el operador \texttt{||}. Los procesos se sincronizan automáticamente en las acciones que tengan el mismo nombre.
+\begin{lstlisting}
+PROCESO_A = (sinc -> finA -> STOP).
+PROCESO_B = (sinc -> finB -> STOP).
+||SISTEMA = (PROCESO_A || PROCESO_B).
+\end{lstlisting}
+
+\section{Renombre y Prefijos}
+A veces necesitas usar la misma "plantilla" de proceso pero con distintos nombres de acciones para que no choquen o para forzar una conexión.
+\begin{itemize}
+    \item \textbf{Prefijo:} a:P antepone a. a todas las acciones de P. $||RED = (usuario1:CLIENTE || usuario2:CLIENTE)$.
+    \item \textbf{Renombre:} nuevo/viejo cambia el nombre de una acción específica. $||CONEXION = (CLIENTE || SERVIDOR) / {conectar/pedir_acceso}$.
+\end{itemize}
+
+\section{Compartimiento de Recursos}
+El patrón clásico es tener un Recurso y varios Usuarios. La sincronización se basa en que todos compartan las etiquetas de "adquirir" y "liberar".
+\begin{lstlisting}
+RECURSO = (get -> put -> RECURSO).
+USUARIO = (get -> usar -> put -> USUARIO).
+||COMPARTIDO = (u1:USUARIO || u2:USUARIO || {u1, u2}::RECURSO).
+\end{lstlisting}
+
+\begin{tcolorbox}[title=Nota sobre el operador ::]
+El prefijo conjunto {u1, u2}::RECURSO hace que el recurso esté disponible para ambos usuarios. Esto significa que la acción get del recurso se mapea a u1.get y u2.get.
+\end{tcolorbox}
+
+\section{Simulación y Bisimulación en LTS}
+
+\subsection{Definición de LTS}
+Sea $\mathcal{S} = (S, s_0, E, \rightarrow)$ un \textbf{sistema de transiciones etiquetadas}, i.e., $\rightarrow \subseteq S \times E \times S$.
+
+\subsection{Simulación}
+Una relación $R \subseteq S \times S$ es una \textbf{simulación} si para todo par $(s, t) \in R$ y evento $a \in E$,
+\[ \forall s' : s \xrightarrow{a} s' \text{ implica } \exists t' : t \xrightarrow{a} t' \text{ y } (s', t') \in R \]
+
+\subsection{Bisimulación}
+Una relación $R \subseteq S \times S$ es una \textbf{bisimulación} si $R$ y $R^{-1}$ son ambas simulaciones. Alternativamente, para todo par $(s, t) \in R$ y evento $a \in E$:
+\begin{enumerate}
+    \item $\forall s' \in S : s \xrightarrow{a} s' \text{ implica } \exists t' \in S : t \xrightarrow{a} t' \text{ y } (s', t') \in R$
+    \item $\forall t' \in S : t \xrightarrow{a} t' \text{ implica } \exists s' \in S : s \xrightarrow{a} s' \text{ y } (s', t') \in R$
+\end{enumerate}
+
+\subsection{Bisimulación débil en LTS}
+La transición débil $s \xRightarrow{a} t$ se define como:
+\[ s \xRightarrow{a} t \text{ es } \begin{cases} 
+s (\xrightarrow{\tau})^* t & \text{si } a = \tau \\ 
+s (\xrightarrow{\tau})^* \xrightarrow{a} (\xrightarrow{\tau})^* t & \text{si } a \neq \tau 
+\end{cases} \]
+
+\section{Comunicación mediante Pasaje de Mensajes}
+
+\subsection{Pasaje de Mensajes Sincrónico}
+Para modelar las operaciones de envío y recepción de mensajes a través de canales sincrónicos en FSP podemos usar acciones indexadas:
+
+\begin{itemize}
+    \item \texttt{send(e, chan)} se implementa con \texttt{chan.send[e]}.
+    \item \texttt{v = receive(chan)} se implementa con \texttt{chan.receive[v:M]}.
+\end{itemize}
+
+\begin{lstlisting}[caption=Modelo Sincrónico]
+range M = 0..9
+
+SENDER = SENDER[0],
+SENDER[e:M] = (chan.send[e] -> SENDER[(e+1)%10]).
+
+RECEIVER = (chan.receive[v:M] -> RECEIVER).
+
+||SyncMsg = (SENDER || RECEIVER)/{chan/chan.{send,receive}}.
+\end{lstlisting}
+
+\subsection{Pasaje de Mensajes Asincrónico}
+Para modelar las operaciones de envío y recepción de mensajes a través de canales asincrónicos en FSP debemos considerar buffers acotados (debe preservarse la finitud de los modelos). Para hacer esto puede utilizarse un modelo de puertos:
+
+\begin{lstlisting}[caption=Modelo de Puertos (Asincrónico)]
+range M = 0..9
+set   S = {[M], [M][M]}
+
+PORT             // empty state, only send permitted
+    = (send[x:M] -> PORT[x]),
+PORT[h:M]        // one message queued to port
+    = (send[x:M] -> PORT[x][h]
+      |receive[h] -> PORT
+      ),
+PORT[t:S][h:M]   // two or more messages queued to port
+    = (send[x:M] -> PORT[x][t][h]
+      |receive[h] -> PORT[t]
+      ).
+\end{lstlisting}
+
+\subsection{Rendezvous}
+El modelo \texttt{EntryDemo} ilustra la interacción entre clientes y un servidor utilizando un puerto de entrada para gestionar las peticiones.
+
+\begin{lstlisting}[caption=Modelo de Rendezvous en FSP]
+set M = {replyA, replyB}
+set S = {[M], [M][M]}
+
+PORT             = (send[x:M] -> PORT[x]),
+PORT[v:M]        = (send[x:M] -> PORT[x][v]
+                   |receive[v] -> PORT),
+PORT[s:S][v:M]   = (send[x:M] -> PORT[x][s][v]
+                   |receive[v] -> PORT[s]).
+
+||ENTRY = PORT/{call/send, accept/receive}.
+
+CLIENT(CH='reply) = (entry.call[CH] -> [CH] -> CLIENT).
+
+SERVER = (entry.accept[ch:M] -> [ch] -> SERVER).
+
+||EntryDemo = (CLIENT('replyA) || CLIENT('replyB) 
+              || entry:ENTRY || SERVER ).
+\end{lstlisting}
+
+
+\section{Lenguajes $\omega$-regulares}
+Dado un lenguaje regular $A \subseteq \Sigma^*$, definimos el lenguaje de palabras infinitas $A^\omega$ como:
+\[ A^\omega \stackrel{\text{def}}{=} \{ \sigma_1\sigma_2\sigma_3 \dots \mid \forall i \geq 0 : \sigma_i \in A \land \sigma_i \neq \epsilon \} \]
+Es decir, $A^\omega$ contiene todas las concatenaciones infinitas de palabras no vacías de $A$.
+
+Un lenguaje $L$ se dice \textbf{$\omega$-regular} si existen lenguajes regulares $A_i$ y $B_i$ ($0 \leq i \leq k$), tales que $\epsilon \notin B_i \neq \emptyset$ y:
+\[ L = \bigcup_{0 \leq i \leq k} A_i \cdot B_i^\omega \]
+donde $\cdot$ denota la concatenación habitual de lenguajes.
+
+\textbf{Propiedad:} Los lenguajes $\omega$-regulares son cerrados por unión, intersección y complemento.
+
+\subsection{Formalización de propiedades de Safety}
+Una propiedad de \textit{safety} (seguridad) establece que "nada malo pasará". 
+\begin{itemize}
+    \item Si una traza viola la propiedad, lo hace en un "instante" finito.
+    \item Una vez violada por un prefijo, no hay forma de remediarlo (no importa cómo continúe la traza).
+\end{itemize}
+
+Un conjunto de trazas $P \subseteq \Sigma^\omega$ es una propiedad de \textbf{safety} si cumple:
+\[ \forall \sigma : \sigma \notin P \implies \exists i \geq 0 : \forall \beta : \sigma[..i]\beta \notin P \]
+O equivalentemente:
+\[ \forall \sigma : (\forall i \geq 0 : \exists \beta : \sigma[..i]\beta \in P) \implies \sigma \in P \]
+donde $\sigma[..i]$ denota el prefijo $i$-ésimo de $\sigma$.
+
+\subsection{Formalización de propiedades de Liveness}
+Una propiedad de \textit{liveness} (vitalidad) establece que "algo bueno eventualmente pasará".
+\begin{itemize}
+    \item Ningún fragmento de traza finito viola la propiedad por sí solo: si el evento esperado no ha ocurrido, siempre puede ocurrir más adelante.
+\end{itemize}
+
+Un conjunto de trazas $P \subseteq \Sigma^\omega$ es una propiedad de \textbf{liveness} si cumple:
+\[ \forall \alpha \in \Sigma^* : \exists \beta \in \Sigma^\omega : \alpha\beta \in P \]
+Es decir, una propiedad $P$ es de \textit{liveness} si toda palabra (prefijo finito) puede ser extendida para satisfacer la propiedad. Dicho de otro modo, su complemento no contiene "prefijos malos".
+
+\subsection{Safety (Seguridad)}
+Definición: Establece que "nada malo sucederá jamás". Se puede violar en una traza (trace) finita. Si el sistema llega a un estado no deseado o realiza una acción prohibida, la propiedad se rompe.
+\begin{itemize}
+    \item Palabra reservada property: Define un proceso "vigilante". Si el sistema intenta realizar una acción no definida en el estado actual de la property, el analizador LTSA detecta una transición al estado de ERROR (estado $-1$).
+    \item Ausencia de Deadlock: Se detecta cuando el sistema llega a un estado sin transiciones salientes (excepto TERMINATED).
+    \item Determinismo: Un proceso debe tener un único estado sucesor para cada acción; el no-determinismo suele ser un error accidental de modelado.
+\end{itemize}
+\begin{lstlisting}[caption=Ejemplo de propiedad de seguridad]
+property SEGURO = (pedido -> entrega -> SEGURO).
+\end{lstlisting}
+Si el sistema intenta hacer 'entrega' sin 'pedido', saltará un error de Safety.
+
+\subsection{Liveness (Vitalidad)}
+Definición: Establece que "algo bueno eventualmente sucederá". Solo se viola en ejecuciones infinitas si el sistema entra en un ciclo donde la acción esperada nunca ocurre.
+\begin{itemize}
+    \item Palabra reservada progress: Define acciones que deben ocurrir infinitamente a menudo.
+    \item Livelock: Una violación donde el sistema se queda atrapado en un ciclo infinito de acciones (frecuentemente internas o irrelevantes) y nunca realiza la acción de progreso.
+\end{itemize}
+\begin{lstlisting}[caption=Definición de progreso]
+progress BUSCAR = {leer, escribir}
+\end{lstlisting}
+El analizador verificará que siempre sea posible realizar 'leer' o 'escribir'.
+
+\subsection{Prioridades (Action Priority)}
+Se usan para forzar comportamientos durante el análisis de las propiedades:
+Prioridad Alta (<<): El sistema elige estas acciones sobre cualquier otra si están disponibles. Útil para minimizar el tiempo entre eventos.
+Prioridad Baja (>>): El sistema solo las elige si no hay otra opción. Útil para modelar fallos o escenarios desfavorables para encontrar violaciones de progreso.
+
+\subsection{¿Qué le falta para ser Safety?}
+Para convertir P en una propiedad de safety S (hacer la clausura), seguí estos pasos: 
+Identificá los "límites" de tus prefijos: Mirá los prefijos finitos de tu propiedad original.
+Buscá la traza infinita que "se queda esperando": Preguntate: "¿Hay alguna traza que cumpla con todos los prefijos pero nunca llegue al final esperado?".
+Agregala: Esa traza (generalmente la que se queda en el primer bucle para siempre) es la que debés sumar para cerrar el conjunto.
+
+\subsection{Descomposición S $\cap$ L}
+Cómo pensar la S (Safety): La S es la versión "permisiva" de tu propiedad original, donde aceptás las trazas que se quedan esperando el evento infinitamente.
+Lógica: "Sigue el patrón o al menos no hagas algo prohibido".
+Cómo pensar la L (Liveness): La L debe ser una promesa. Debe decir: "No me importa cómo empieces, pero eventualmente tenés que cumplir X".
+Lógica: "Cualquier cosa puede pasar al principio, pero al final debe ocurrir el 'evento bueno' de la propiedad original".
+
+\section{Operadores y Modalidades}
+
+\begin{itemize}
+    \item $\Box \phi$: Siempre en el futuro sucede $\phi$.
+    \item $\Diamond \phi$: En algún instante futuro sucede $\phi$.
+    \item $\bigcirc \phi$: En el siguiente instante sucede $\phi$.
+    \item $\phi \mathbf{U} \psi$: $\phi$ sucede hasta que suceda $\psi$.
+    \item $\phi \mathbf{W} \psi$: $\phi$ sucede siempre o hasta que suceda $\psi$ (Weak Until).
+\end{itemize}
+
+\section{Semántica Formal}
+Dada una traza $\sigma$ (secuencia infinita de estados), la satisfacción de una fórmula se define inductivamente. Se denota como $\sigma[i..]$ al sufijo $i$-ésimo de la traza $\sigma$.
+
+\begin{equation*}
+\begin{aligned}
+\sigma \models p & \iff p \in \sigma(0), \text{ para todo } p \in PA \\
+\sigma \models \neg \phi & \iff \sigma \not\models \phi \\
+\sigma \models \phi \wedge \psi & \iff \sigma \models \phi \text{ y } \sigma \models \psi \\
+\sigma \models \phi \vee \psi & \iff \sigma \models \phi \text{ o } \sigma \models \psi \\
+\sigma \models \bigcirc \phi & \iff \sigma[1..] \models \phi \\
+\sigma \models \Diamond \phi & \iff \exists j \geq 0 : \sigma[j..] \models \phi \\
+\sigma \models \Box \phi & \iff \forall j \geq 0 : \sigma[j..] \models \phi \\
+\sigma \models \phi \mathbf{U} \psi & \iff \exists j \geq 0 : (\sigma[j..] \models \psi \text{ y } \forall i : 0 \leq i < j : \sigma[i..] \models \phi)
+\end{aligned}
+\end{equation*}
+
+\section{Conceptos de Modelo y Lenguaje}
+Sea $PA$ el conjunto de proposiciones atómicas.
+
+\begin{itemize}
+    \item \textbf{Satisfacción Proposicional:} Para un conjunto $A \subseteq PA$, se cumple que $A \models p \iff p \in A$.
+    \item \textbf{Modelo de una fórmula:} Es un subconjunto de trazas infinitas $(2^{PA})^\omega$.
+    \item \textbf{Lenguaje de una fórmula:} $\mathcal{L}(\phi) = \{ \sigma \in (2^{PA})^\omega \mid \sigma \models \phi \}$.
+\end{itemize}
+
+\textit{Nota sobre Expresividad:} Los lenguajes $\omega$-regulares son estrictamente más expresivos que LTL. Por ejemplo, el lenguaje $( (\emptyset + \{p\}) \{p\} )^\omega$ no puede ser expresado mediante una fórmula LTL.
+
+\section{Leyes y Equivalencias}
+Estas leyes permiten simplificar o transformar fórmulas lógicas manteniendo su validez.
+\begin{itemize}
+    \item $\neg \Box \phi \equiv \Diamond \neg \phi$
+    \item $\neg \Diamond \phi \equiv \Box \neg \phi$
+    \item $\neg \bigcirc \phi \equiv \bigcirc \neg \phi$
+    \item $\Diamond \phi \equiv \text{true } \mathbf{U} \phi$
+    \item $\Box \phi \equiv \neg \Diamond \neg \phi$
+    \item $\Box \Box \phi \equiv \Box \phi$
+    \item $\Diamond \Diamond \phi \equiv \Diamond \phi$
+    \item $\phi \mathbf{U} (\phi \mathbf{U} \psi) \equiv \phi \mathbf{U} \psi$
+    \item $(\phi \mathbf{U} \psi) \mathbf{U} \psi \equiv \phi \mathbf{U} \psi$
+    \item $\Diamond \phi \equiv \phi \vee \bigcirc \Diamond \phi$
+    \item $\Box \phi \equiv \phi \wedge \bigcirc \Box \phi$
+    \item $\phi \mathbf{U} \psi \equiv \psi \vee (\phi \wedge \bigcirc (\phi \mathbf{U} \psi))$
+    \item $(\Diamond \phi) \vee (\Diamond \psi) \equiv \Diamond (\phi \vee \psi)$
+    \item $(\Box \phi) \wedge (\Box \psi) \equiv \Box (\phi \wedge \psi)$
+    \item $\bigcirc (\phi \mathbf{U} \psi) \equiv (\bigcirc \phi) \mathbf{U} (\bigcirc \psi)$
+    \item $\Diamond \Box \Diamond \phi \equiv \Box \Diamond \phi$
+    \item $\Box \Diamond \Box \phi \equiv \Diamond \Box \phi$
+\end{itemize}
+\section{Fairness}
+\begin{itemize}
+    \item Weak fairness: $\Diamond \Box \phi \rightarrow \Box \Diamond \psi \equiv \Box (\Box \phi \rightarrow \Diamond \psi)$
+    \item Strong fairness: $\Box \Diamond \phi \rightarrow \Box \Diamond \psi \equiv \Box (\Box \Diamond \phi \rightarrow \Diamond \psi)$
+\end{itemize}
+\end{document}
