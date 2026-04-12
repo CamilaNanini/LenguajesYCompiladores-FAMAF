@@ -130,16 +130,13 @@ FA(\texttt{newvar } v := e \texttt{ in } c) &= FV(c) - \{v\}
 
 \subsection{Teorema de Coincidencia}
 
-Si dos estados $\sigma$ y $\sigma'$ coinciden en las variables libres de $c$, entonces da lo mismo evaluar $c$ en $\sigma$ o $\sigma'$.
-
-El enunciado correcto del \textbf{Teorema de Coincidencia} es:
 \begin{enumerate}
     \item $(\forall w \in FV(c). \sigma w = \sigma' w)$ implica,
     \begin{itemize}
         \item o bien $\llbracket c \rrbracket \sigma = \bot = \llbracket c \rrbracket \sigma'$,
         \item o bien $\llbracket c \rrbracket \sigma \neq \bot \neq \llbracket c \rrbracket \sigma'$ y $\forall w \in FV(c). \llbracket c \rrbracket \sigma w = \llbracket c \rrbracket \sigma' w$
     \end{itemize}
-    \item Si $\llbracket c \rrbracket \sigma \neq \bot$, entonces $\forall w \notin FA(c). \llbracket c \rrbracket \sigma w = \sigma w$.
+    \item Si $\llbracket c \rrbracket \sigma \neq \bot$, entonces $\forall w \notin FA(c). \llbracket c \rrbracket \sigma w = \sigma w$. (esto es intangibilidad)
 \end{enumerate}
 
 \subsection{Teorema de Renombre}
@@ -185,5 +182,97 @@ Sea $FV(c) \subseteq V \subseteq \langle var \rangle$ tal que $\delta$ es inyect
     \item o bien $\llbracket c/\delta \rrbracket \sigma = \bot = \llbracket c \rrbracket \sigma'$,
     \item o bien $\llbracket c/\delta \rrbracket \sigma \neq \bot \neq \llbracket c \rrbracket \sigma'$ y $\forall w \in V. \ \llbracket c/\delta \rrbracket \sigma(\delta w) = \llbracket c \rrbracket \sigma' w$.
 \end{itemize}
+
+\section{Fallas en el Lenguaje Imperativo Simple}
+
+Para modelar la transferencia de control por fallas, se incorporan excepciones al lenguaje imperativo mediante nuevas construcciones:
+
+\[
+\langle comm \rangle ::= fail \mid catchin \ \langle comm \rangle \ with \ \langle comm \rangle
+\]
+
+\subsection{Dominio semántico}
+
+Se extiende el conjunto de estados:
+\[
+\Sigma' = \Sigma \cup (\{abort\} \times \Sigma)
+\]
+
+La función semántica queda definida como:
+\[
+[[\_]] : \langle comm \rangle \to (\Sigma \to \Sigma'_\bot)
+\]
+
+donde $\Sigma'_\bot$ es un dominio llano con elemento indefinido $\bot$.
+
+\subsection{Semántica de los comandos básicos}
+
+\begin{align*}
+[[skip]]\sigma &= \sigma \\
+[[fail]]\sigma &= \langle abort, \sigma \rangle \\
+[[v := e]]\sigma &= \sigma[v \mapsto [[e]]\sigma]
+\end{align*}
+
+\subsection{Operadores de transferencia de control}
+
+Para definir la semántica de composición y manejo de excepciones, se introducen tres operadores:
+
+\begin{itemize}
+    \item \textbf{Extensión estricta ($f_*$):} Propaga fallas (no continúa la ejecución).
+    \[
+    f_*(x) =
+    \begin{cases}
+    f(\sigma) & \text{si } x = \sigma \in \Sigma \\
+    x & \text{si } x \text{ es abort o } \bot
+    \end{cases}
+    \]
+
+    \item \textbf{Extensión de manejo ($f_+$):} Se ejecuta solo si hubo falla.
+    \[
+    f_+(x) =
+    \begin{cases}
+    f(\sigma) & \text{si } x = \langle abort, \sigma \rangle \\
+    x & \text{en otro caso}
+    \end{cases}
+    \]
+
+    \item \textbf{Extensión total ($f_\dagger$):} Se ejecuta siempre, preservando el estado de falla (en este caso se hace asi ya que queremos que en el newvar se ejecute la función para restaurar el estado original).
+    \[
+    f_\dagger(x) =
+    \begin{cases}
+    \langle abort, f(\sigma) \rangle & \text{si } x = \langle abort, \sigma \rangle \\
+    f(x) & \text{si } x \in \Sigma \\
+    \bot & \text{si } x = \bot
+    \end{cases}
+    \]
+\end{itemize}
+
+\subsection{Semántica de las construcciones extendidas}
+
+\[
+[[c_0; c_1]]\sigma = [[c_1]]_*([[c_0]]\sigma)
+\]
+
+\[
+[[catchin \ c_0 \ with \ c_1]]\sigma = [[c_1]]_+([[c_0]]\sigma)
+\]
+
+\[
+[[newvar \ v := e \ in \ c]]\sigma =
+(\lambda \sigma'. \sigma'[v \mapsto \sigma(v)])_\dagger
+([[c]](\sigma[v \mapsto [[e]]\sigma]))
+\]
+
+\[
+[[while \ b \ do \ c]] = \bigsqcup_{i=0}^{\infty} F^i(\bot)
+\]
+donde
+\[
+F(w)(\sigma) =
+\begin{cases}
+w_*([[c]]\sigma) & \text{si } [[b]]\sigma \\
+\sigma & \text{en otro caso}
+\end{cases}
+\]
 
 \end{document}
