@@ -275,4 +275,223 @@ w_*([[c]]\sigma) & \text{si } [[b]]\sigma \\
 \end{cases}
 \]
 
+\section{Entrada/Salida y Manejo de Errores}
+\subsection{Sintaxis de Comandos}
+
+\[
+\begin{array}{rcl}
+\langle comm \rangle & ::= & \text{skip} \mid \langle var \rangle := \langle intexp \rangle \mid \langle comm \rangle ; \langle comm \rangle \\
+& \mid & \text{if } \langle boolexp \rangle \text{ then } \langle comm \rangle \text{ else } \langle comm \rangle \\
+& \mid & \text{newvar } \langle var \rangle := \langle intexp \rangle \text{ in } \langle comm \rangle \\
+& \mid & \text{while } \langle boolexp \rangle \text{ do } \langle comm \rangle \\
+& \mid & \text{fail} \mid \text{catchin } \langle comm \rangle \text{ with } \langle comm \rangle \\
+& \mid & ! \langle intexp \rangle \mid ? \langle var \rangle
+\end{array}
+\]
+
+\subsection{Dominio de Salidas ($\Omega$)}
+
+El dominio de salidas $\Omega$ se define como el conjunto de posibles resultados de la ejecución de un programa, incluyendo terminación exitosa, error o divergencia (ejecución infinita).
+
+\[
+\begin{aligned}
+\Omega = & \quad \{\langle n_0, \dots, n_k, \sigma' \rangle \mid n_i \in \mathbb{Z}, \sigma' \in \hat{\Sigma}\} \\
+& \cup \{\langle n_0, \dots, n_k \rangle \mid n_i \in \mathbb{Z}\} \\
+& \cup \{\langle n_0, n_1, n_2, n_3, \dots, n_k, \dots \rangle \mid n_i \in \mathbb{Z}\}
+\end{aligned}
+\]
+
+Donde el conjunto de estados extendido $\hat{\Sigma}$ se define como:
+\[
+\hat{\Sigma} = \Sigma \cup (\{\mathbf{abort}\} \times \Sigma)
+\]
+
+\subsection{Concatenación de tuplas}
+
+Podemos ``concatenar'' ciertos elementos de $\Omega$ para obtener nuevos elementos del mismo dominio:
+\[
+\langle n_0, \dots, n_k \rangle \mathbin{+\mkern-10mu+} \langle m_0, \dots, s \rangle
+= \langle n_0, \dots, n_k, m_0, \dots, s \rangle
+\]
+
+Aquí, $s$ puede representar tanto un número entero como un estado (finalizado o fallido).
+
+\subsection{Estructura del Dominio}
+
+Para tratar la semántica de forma denotacional, definimos una estructura de orden sobre $\Omega$:
+
+\begin{enumerate}
+    \item \textbf{Orden de prefijo:} El orden está dado por la relación de prefijo. Por ejemplo:
+    \[
+    \langle 4, 3, 2, 1 \rangle \sqsubseteq \langle 4, 3, 2, 1, \sigma \rangle
+    \]
+
+    \item \textbf{Supremo de cadenas no interesantes:} Es simplemente el último elemento de la cadena.
+
+    \item \textbf{Supremo de cadenas interesantes:} Es la tupla (posiblemente infinita) que coincide en todas las posiciones de cada tupla de la cadena.
+\end{enumerate}
+
+\paragraph{Observaciones:}
+\begin{itemize}
+    \item El elemento mínimo está dado por la tupla vacía: $\langle \rangle$.
+    \item En una cadena ``interesante'' de tuplas, existen tuplas de cada longitud, por lo tanto, el supremo es efectivamente único.
+\end{itemize}
+
+\subsection{Semántica de Programas}
+
+La nueva semántica de los comandos se define como una función que toma un estado inicial y devuelve un elemento del dominio de salidas:
+\[
+\llbracket \_ \rrbracket : \langle comm \rangle \to (\Sigma \to \Omega)
+\]
+
+\subsection{Reglas semánticas}
+
+Para el comando de salida de datos ($!e$):
+\[
+\llbracket !e \rrbracket \sigma = \langle \llbracket e \rrbracket \sigma, \sigma \rangle
+\]
+    \[
+    \llbracket \mathbf{skip} \rrbracket \sigma = \langle \sigma \rangle
+    \]
+    \[
+    \llbracket v := e \rrbracket \sigma = \langle \sigma [v : \llbracket e \rrbracket \sigma] \rangle
+    \]
+    \[
+    \llbracket \mathbf{if} \ b \ \mathbf{then} \ c \ \mathbf{else} \ c' \rrbracket \sigma =
+    \begin{cases}
+        \llbracket c \rrbracket \sigma & \text{si } \llbracket b \rrbracket \sigma \\
+        \llbracket c' \rrbracket \sigma & \text{si } \neg \llbracket b \rrbracket \sigma
+    \end{cases}
+    \]
+    \[
+    \llbracket c_0; c_1 \rrbracket \sigma =
+    \llbracket c_1 \rrbracket_{*} (\llbracket c_0 \rrbracket \sigma)
+    \]
+    \[
+    \llbracket \mathbf{newvar} \ v := e \ \mathbf{in} \ c \rrbracket \sigma =
+    (rest_{v,\sigma})_{\dagger} \left( \llbracket c \rrbracket [\sigma \mid v : \llbracket e \rrbracket \sigma] \right)
+    \]
+
+\subsection{Semántica del Bucle (While)}
+\[
+F_{b,c} : (\Sigma \to \Sigma') \to (\Sigma \to \Sigma')
+\]
+
+\[
+F_{b,c}(f)(\sigma) =
+\begin{cases}
+    \sigma & \text{si } \neg \llbracket b \rrbracket \sigma \\
+    f_{*} (\llbracket c \rrbracket \sigma) & \text{si } \llbracket b \rrbracket \sigma
+\end{cases}
+\]
+
+\[
+\llbracket \mathbf{while} \ b \ \mathbf{do} \ c \rrbracket \sigma =
+\left( \bigsqcup_{i \in \mathbb{N}} F^i \perp \right) \sigma
+\]
+
+\paragraph{Nota:}
+No es necesario cambiar la estructura de la ecuación, solo redefinir adecuadamente los operadores ($*$, $\dagger$, $\sqcup$) sobre el nuevo dominio $\Omega$.
+
+\section{Funciones de Propagación de Errores}
+
+Estas funciones definen cómo se comportan las transformaciones de estado cuando encuentran estados de error o terminación.
+
+\subsection{Propagación estándar $(\_)_{*}$}
+
+La función $(\_)_{*}$ extiende una función de estado a una que maneja errores y abortos:
+\[
+(\_)_{*} : (\Sigma \to \Sigma') \to (\Sigma' \to \Sigma')
+\]
+
+\[
+\begin{aligned}
+f_{*}(\perp) &= \perp \\
+f_{*}(\langle \mathbf{abort}, \sigma \rangle) &= \langle \mathbf{abort}, \sigma \rangle \\
+f_{*}(\sigma) &= f(\sigma)
+\end{aligned}
+\]
+
+\subsection{Propagación tipo Map $(\_)_{\dagger}$}
+
+Similar a la función \texttt{map} en listas, aplica una transformación incluso en estados de aborto:
+\[
+(\_)_{\dagger} : (\Sigma \to \Sigma) \to (\Sigma' \to \Sigma')
+\]
+
+\[
+\begin{aligned}
+f_{\dagger}(\perp) &= \perp \\
+f_{\dagger}(\langle \mathbf{abort}, \sigma \rangle) &= \langle \mathbf{abort}, f(\sigma) \rangle \\
+f_{\dagger}(\sigma) &= f(\sigma)
+\end{aligned}
+\]
+
+\section{Revisión de Funciones sobre $\Omega$}
+
+Al trabajar con el dominio de secuencias $\Omega$, las funciones de propagación se redefinen para operar sobre tuplas de enteros y estados.
+
+\subsection{Propagación en $\Omega$}
+
+\[
+(\_)_{*} : (\Sigma \to \Omega) \to (\Omega \to \Omega)
+\]
+
+\[
+\begin{aligned}
+f_{*}(\langle n_0, \dots, n_{k-1} \rangle) &= \langle n_0, \dots, n_{k-1} \rangle \\
+f_{*}(\langle n_0, \dots, n_{k-1}, \sigma \rangle) &= \langle n_0, \dots, n_{k-1} \rangle \mathbin{+\mkern-10mu+} f(\sigma) \\
+f_{*}(\langle n_0, \dots, n_{k-1}, \langle \mathbf{abort}, \sigma \rangle \rangle) &= \langle n_0, \dots, n_{k-1}, \langle \mathbf{abort}, \sigma \rangle \rangle \\
+f_{*}(\langle n_0, \dots, n_{k-1}, \dots \rangle) &= \langle n_0, \dots, n_{k-1}, \dots \rangle
+\end{aligned}
+\]
+
+\subsection{Función Map en $\Omega$}
+
+\[
+(\_)_{\dagger} : (\Sigma \to \Sigma) \to (\Omega \to \Omega)
+\]
+
+\[
+\begin{aligned}
+f_{\dagger}(\langle n_0, \dots, n_{k-1} \rangle) &= \langle n_0, \dots, n_{k-1} \rangle \\
+f_{\dagger}(\langle n_0, \dots, n_{k-1}, \sigma \rangle) &= \langle n_0, \dots, n_{k-1}, f(\sigma) \rangle \\
+f_{\dagger}(\langle n_0, \dots, n_{k-1}, \langle \mathbf{abort}, \sigma \rangle \rangle) &= \langle n_0, \dots, n_{k-1}, \langle \mathbf{abort}, f(\sigma) \rangle \rangle \\
+f_{\dagger}(\langle n_0, \dots, n_{k-1}, \dots \rangle) &= \langle n_0, \dots, n_{k-1}, \dots \rangle
+\end{aligned}
+\]
+
+\section{Funciones Inyectoras y Constructores}
+
+Para facilitar la definición recursiva de la semántica, consideramos las siguientes funciones auxiliares:
+
+\[
+\begin{aligned}
+\iota_{\perp} &: \{\langle \rangle\} \to \Omega 
+& \iota_{term} &: \Sigma \to \Omega \\
+\iota_{\perp}(\langle \rangle) &= \langle \rangle 
+& \iota_{term}(\sigma) &= \langle \sigma \rangle \\
+\iota_{abort} &: \Sigma \to \Omega 
+& \iota_{out} &: \mathbb{Z} \times \Omega \to \Omega \\
+\iota_{abort}(\sigma) &= \langle \sigma \rangle 
+& \iota_{out}(\langle n, \omega \rangle) &= \langle n \rangle \mathbin{+\mkern-10mu+} \omega
+\end{aligned}
+\]
+
+\subsection{Propagación de errores (Definición Alternativa)}
+
+Utilizando los constructores anteriores, la propagación $f_{*}$ se puede ver como:
+
+\[
+\begin{aligned}
+f_{*}(\perp) &= \perp \\
+f_{*}(\iota_{term}(\sigma)) &= f(\sigma) \\
+f_{*}(\iota_{abort}(\sigma)) &= \iota_{abort}(\sigma) \\
+f_{*}(\iota_{out}(\langle n, \omega \rangle)) &= \iota_{out}(\langle n, f_{*}(\omega) \rangle)
+\end{aligned}
+\]
+
+\paragraph{Observación:}
+Para asegurar que el mínimo punto fijo exista y sea único, es fundamental que la función $f_{*}$ sea \textbf{continua}.
+
 \end{document}
