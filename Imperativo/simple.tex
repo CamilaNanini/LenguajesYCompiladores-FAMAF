@@ -21,12 +21,7 @@
 \includegraphics[width=1\textwidth]{./gramaticaAbstractaLIS}
 
 \subsection{Estados}
-
-\[
-\Sigma = \text{Var} \to \mathbb{Z}
-\]
-
-Un estado es una función que asigna a cada variable un entero.
+Una función que asigna a cada variable un entero $\Sigma = \text{Var} \to \mathbb{Z}$
 
 \section{Funciones semánticas}
 
@@ -35,22 +30,12 @@ Un estado es una función que asigna a cada variable un entero.
 [\![\cdot]\!]_{boolexp} &: \langle boolexp \rangle \to (\Sigma \to \{V,F\}) \\
 [\![\cdot]\!]_{comm} &: \langle comm \rangle \to (\Sigma \to \Sigma)
 \end{align*}
-\text{Todos los comandos terminan en su ejecución y su "resultado" es un nuevo estado}
+\text{Todos los comandos terminan y dan un nuevo estado}
 
-\section{Problema de la iteración}
+\section{No terminación}
 
-\subsection{No terminación}
-
-Se introduce:
-\[
-\Sigma_\bot = \Sigma \cup \{\bot\}
-\]
-
-\subsection{Nuevo tipo semántico}
-
-\[
-[\![\cdot]\!] : \langle comm \rangle \to (\Sigma \to \Sigma_\bot)
-\]
+Se introduce: $\Sigma_\bot = \Sigma \cup \{\bot\}$. Así que:
+$[\![\cdot]\!] : \langle comm \rangle \to (\Sigma \to \Sigma_\bot)$
 
 \section{Extensión estricta}
 
@@ -183,35 +168,19 @@ Sea $FV(c) \subseteq V \subseteq \langle var \rangle$ tal que $\delta$ es inyect
     \item o bien $\llbracket c/\delta \rrbracket \sigma \neq \bot \neq \llbracket c \rrbracket \sigma'$ y $\forall w \in V. \ \llbracket c/\delta \rrbracket \sigma(\delta w) = \llbracket c \rrbracket \sigma' w$.
 \end{itemize}
 
-\section{Fallas en el Lenguaje Imperativo Simple}
+\section{Fallas}
 
-Para modelar la transferencia de control por fallas, se incorporan excepciones al lenguaje imperativo mediante nuevas construcciones:
+Para modelar la transferencia de control por fallas, se incorporan:
 
 \[
 \langle comm \rangle ::= fail \mid catchin \ \langle comm \rangle \ with \ \langle comm \rangle
 \]
 
-\subsection{Dominio semántico}
-
-Se extiende el conjunto de estados:
-\[
-\Sigma' = \Sigma \cup (\{abort\} \times \Sigma)
-\]
-
-La función semántica queda definida como:
-\[
-[[\_]] : \langle comm \rangle \to (\Sigma \to \Sigma'_\bot)
-\]
-
+Se extiende: $\Sigma' = \Sigma \cup (\{abort\} \times \Sigma)$
+Y la función semántica queda definida como:
+$[[\_]] : \langle comm \rangle \to (\Sigma \to \Sigma'_\bot)
+$
 donde $\Sigma'_\bot$ es un dominio llano con elemento indefinido $\bot$.
-
-\subsection{Semántica de los comandos básicos}
-
-\begin{align*}
-[[skip]]\sigma &= \sigma \\
-[[fail]]\sigma &= \langle abort, \sigma \rangle \\
-[[v := e]]\sigma &= \sigma[v \mapsto [[e]]\sigma]
-\end{align*}
 
 \subsection{Operadores de transferencia de control}
 
@@ -247,25 +216,19 @@ Para definir la semántica de composición y manejo de excepciones, se introduce
     \]
 \end{itemize}
 
-\subsection{Semántica de las construcciones extendidas}
-
-\[
-[[c_0; c_1]]\sigma = [[c_1]]_*([[c_0]]\sigma)
-\]
-
-\[
-[[catchin \ c_0 \ with \ c_1]]\sigma = [[c_1]]_+([[c_0]]\sigma)
-\]
-
-\[
-[[newvar \ v := e \ in \ c]]\sigma =
+\subsection{Semántica final}
+\begin{align*}
+[[skip]]\sigma &= \sigma \\
+[[fail]]\sigma &= \langle abort, \sigma \rangle \\
+[[v := e]]\sigma &= \sigma[v \mapsto [[e]]\sigma] \\
+[[c_0; c_1]]\sigma &= [[c_1]]_*([[c_0]]\sigma) \\
+[[catchin \ c_0 \ with \ c_1]]\sigma &= [[c_1]]_+([[c_0]]\sigma) \\
+[[newvar \ v := e \ in \ c]]\sigma &=
 (\lambda \sigma'. \sigma'[v \mapsto \sigma(v)])_\dagger
-([[c]](\sigma[v \mapsto [[e]]\sigma]))
-\]
+([[c]](\sigma[v \mapsto [[e]]\sigma])) \\
+[[while \ b \ do \ c]] &= \bigsqcup_{i=0}^{\infty} F^i(\bot)
+\end{align*}
 
-\[
-[[while \ b \ do \ c]] = \bigsqcup_{i=0}^{\infty} F^i(\bot)
-\]
 donde
 \[
 F(w)(\sigma) =
@@ -275,21 +238,12 @@ w_*([[c]]\sigma) & \text{si } [[b]]\sigma \\
 \end{cases}
 \]
 
-\section{Entrada/Salida y Manejo de Errores}
-\subsection{Sintaxis de Comandos}
-
+\section{Entrada/Salida }
 \[
 \begin{array}{rcl}
-\langle comm \rangle & ::= & \text{skip} \mid \langle var \rangle := \langle intexp \rangle \mid \langle comm \rangle ; \langle comm \rangle \\
-& \mid & \text{if } \langle boolexp \rangle \text{ then } \langle comm \rangle \text{ else } \langle comm \rangle \\
-& \mid & \text{newvar } \langle var \rangle := \langle intexp \rangle \text{ in } \langle comm \rangle \\
-& \mid & \text{while } \langle boolexp \rangle \text{ do } \langle comm \rangle \\
-& \mid & \text{fail} \mid \text{catchin } \langle comm \rangle \text{ with } \langle comm \rangle \\
-& \mid & ! \langle intexp \rangle \mid ? \langle var \rangle
+\langle comm \rangle & ::= & \text{skip} \mid ... \mid ! \langle intexp \rangle \mid ? \langle var \rangle
 \end{array}
 \]
-
-\subsection{Dominio de Salidas ($\Omega$)}
 
 El dominio de salidas $\Omega$ se define como el conjunto de posibles resultados de la ejecución de un programa, incluyendo terminación exitosa, error o divergencia (ejecución infinita).
 
@@ -337,16 +291,8 @@ Para tratar la semántica de forma denotacional, definimos una estructura de ord
     \item En una cadena ``interesante'' de tuplas, existen tuplas de cada longitud, por lo tanto, el supremo es efectivamente único.
 \end{itemize}
 
-\subsection{Semántica de Programas}
-
-La nueva semántica de los comandos se define como una función que toma un estado inicial y devuelve un elemento del dominio de salidas:
-\[
-\llbracket \_ \rrbracket : \langle comm \rangle \to (\Sigma \to \Omega)
-\]
-
-\subsection{Reglas semánticas}
-
-Para el comando de salida de datos ($!e$):
+\subsection{Semántica de Programas de output}
+$\llbracket \_ \rrbracket : \langle comm \rangle \to (\Sigma \to \Omega)$
 \[
 \llbracket !e \rrbracket \sigma = \langle \llbracket e \rrbracket \sigma, \sigma \rangle
 \]
@@ -371,8 +317,6 @@ Para el comando de salida de datos ($!e$):
     \llbracket \mathbf{newvar} \ v := e \ \mathbf{in} \ c \rrbracket \sigma =
     (rest_{v,\sigma})_{\dagger} \left( \llbracket c \rrbracket [\sigma \mid v : \llbracket e \rrbracket \sigma] \right)
     \]
-
-\subsection{Semántica del Bucle (While)}
 \[
 F_{b,c} : (\Sigma \to \Sigma') \to (\Sigma \to \Sigma')
 \]
@@ -389,9 +333,6 @@ F_{b,c}(f)(\sigma) =
 \llbracket \mathbf{while} \ b \ \mathbf{do} \ c \rrbracket \sigma =
 \left( \bigsqcup_{i \in \mathbb{N}} F^i \perp \right) \sigma
 \]
-
-\paragraph{Nota:}
-No es necesario cambiar la estructura de la ecuación, solo redefinir adecuadamente los operadores ($*$, $\dagger$, $\sqcup$) sobre el nuevo dominio $\Omega$.
 
 \section{Funciones de Propagación de Errores}
 
@@ -463,35 +404,118 @@ f_{\dagger}(\langle n_0, \dots, n_{k-1}, \dots \rangle) &= \langle n_0, \dots, n
 
 \section{Funciones Inyectoras y Constructores}
 
-Para facilitar la definición recursiva de la semántica, consideramos las siguientes funciones auxiliares:
+\includegraphics[width=1\textwidth]{./iotas.png}
+\includegraphics[width=1\textwidth]{./reformulaciónSimple.png}
+\includegraphics[width=1\textwidth]{./reformulación2.png}
 
+\section{Semántica Operacional}
+La semántica operacional de paso pequeño (small-step) define la ejecución de un programa como una transición entre configuraciones.
+
+Definimos los conjuntos de configuraciones y la relación de transición $\to$ de la siguiente manera:
+
+\begin{itemize}
+    \item \textbf{Configuraciones terminales:} $\Gamma_T = \Sigma \cup (\{\mathbf{abort}\} \times \Sigma)$
+    \item \textbf{Configuraciones no-terminales:} $\Gamma_{NT} = \langle comm \rangle \times \Sigma$
+    \item \textbf{Conjunto de configuraciones:} $\Gamma = \Gamma_T \cup \Gamma_{NT}$
+    \item \textbf{Relación de un paso:} $\to \subseteq \Gamma_{NT} \times \Gamma$
+\end{itemize}
+
+
+A continuación, definimos la relación $\to$ inductivamente mediante las siguientes reglas:
+
+\paragraph{Comandos Atómicos}
 \[
-\begin{aligned}
-\iota_{\perp} &: \{\langle \rangle\} \to \Omega 
-& \iota_{term} &: \Sigma \to \Omega \\
-\iota_{\perp}(\langle \rangle) &= \langle \rangle 
-& \iota_{term}(\sigma) &= \langle \sigma \rangle \\
-\iota_{abort} &: \Sigma \to \Omega 
-& \iota_{out} &: \mathbb{Z} \times \Omega \to \Omega \\
-\iota_{abort}(\sigma) &= \langle \sigma \rangle 
-& \iota_{out}(\langle n, \omega \rangle) &= \langle n \rangle \mathbin{+\mkern-10mu+} \omega
-\end{aligned}
+\text{(skip)} \frac{}{\langle \mathbf{skip}, \sigma \rangle \to \sigma}
+\qquad
+\text{(assign)} \frac{}{\langle v := e, \sigma \rangle \to [\sigma | v : \llbracket e \rrbracket \sigma]}
+\]
+\[
+\text{(fail)} \frac{}{\langle \mathbf{fail}, \sigma \rangle \to \langle \mathbf{abort}, \sigma \rangle}
 \]
 
-\subsection{Propagación de errores (Definición Alternativa)}
-
-Utilizando los constructores anteriores, la propagación $f_{*}$ se puede ver como:
-
+\paragraph{Composición Secuencial}
 \[
-\begin{aligned}
-f_{*}(\perp) &= \perp \\
-f_{*}(\iota_{term}(\sigma)) &= f(\sigma) \\
-f_{*}(\iota_{abort}(\sigma)) &= \iota_{abort}(\sigma) \\
-f_{*}(\iota_{out}(\langle n, \omega \rangle)) &= \iota_{out}(\langle n, f_{*}(\omega) \rangle)
-\end{aligned}
+\text{(seq-ok)} \frac{\langle c_0, \sigma \rangle \to \sigma'}{\langle c_0 ; c_1, \sigma \rangle \to \langle c_1, \sigma' \rangle}
+\]
+\[
+\text{(seq-ab)} \frac{\langle c_0, \sigma \rangle \to \langle \mathbf{abort}, \sigma' \rangle}{\langle c_0 ; c_1, \sigma \rangle \to \langle \mathbf{abort}, \sigma' \rangle}
+\]
+\[
+\text{(seq-nt)} \frac{\langle c_0, \sigma \rangle \to \langle c_0', \sigma' \rangle}{\langle c_0 ; c_1, \sigma \rangle \to \langle c_0'; c_1, \sigma' \rangle}
 \]
 
-\paragraph{Observación:}
-Para asegurar que el mínimo punto fijo exista y sea único, es fundamental que la función $f_{*}$ sea \textbf{continua}.
+\paragraph{Condicional}
+\[
+\text{(if-true)} \frac{\text{si } \llbracket b \rrbracket \sigma = T}{\langle \mathbf{if} \ b \ \mathbf{then} \ c_0 \ \mathbf{else} \ c_1, \sigma \rangle \to \langle c_0, \sigma \rangle}
+\]
+\[
+\text{(if-false)} \frac{\text{si } \llbracket b \rrbracket \sigma = F}{\langle \mathbf{if} \ b \ \mathbf{then} \ c_0 \ \mathbf{else} \ c_1, \sigma \rangle \to \langle c_1, \sigma \rangle}
+\]
+
+\paragraph{Ciclo While}
+\[
+\text{(while-false)} \frac{\text{si } \llbracket b \rrbracket \sigma = F}{\langle \mathbf{while} \ b \ \mathbf{do} \ c, \sigma \rangle \to \sigma}
+\]
+\[
+\text{(while-true)} \frac{\text{si } \llbracket b \rrbracket \sigma = T}{\langle \mathbf{while} \ b \ \mathbf{do} \ c, \sigma \rangle \to \langle c; \mathbf{while} \ b \ \mathbf{do} \ c, \sigma \rangle}
+\]
+
+\paragraph{Variables Locales}
+\[
+\text{(loc-ok)} \frac{\langle c, [\sigma | v : \llbracket e \rrbracket \sigma] \rangle \to \sigma'}{\langle \mathbf{newvar} \ v := e \ \mathbf{in} \ c, \sigma \rangle \to [\sigma' | v : \sigma v]}
+\]
+\[
+\text{(loc-abort)} \frac{\langle c, [\sigma | v : \llbracket e \rrbracket \sigma] \rangle \to \langle \mathbf{abort}, \sigma' \rangle}{\langle \mathbf{newvar} \ v := e \ \mathbf{in} \ c, \sigma \rangle \to \langle \mathbf{abort}, [\sigma' | v : \sigma v] \rangle}
+\]
+\[
+\text{(loc-nt)} \frac{\langle c, [\sigma | v : \llbracket e \rrbracket \sigma] \rangle \to \langle c', \sigma' \rangle}{\langle \mathbf{newvar} \ v := e \ \mathbf{in} \ c, \sigma \rangle \to \langle \mathbf{newvar} \ v := \sigma' v \ \mathbf{in} \ c', [\sigma' | v : \sigma v] \rangle}
+\]
+
+\paragraph{Captura de Fallas}
+\[
+\text{(catch-ok)} \frac{\langle c, \sigma \rangle \to \sigma'}{\langle \mathbf{catchin} \ c \ \mathbf{with} \ \hat{c}, \sigma \rangle \to \sigma'}
+\]
+\[
+\text{(catch-abort)} \frac{\langle c, \sigma \rangle \to \langle \mathbf{abort}, \sigma' \rangle}{\langle \mathbf{catchin} \ c \ \mathbf{with} \ \hat{c}, \sigma \rangle \to \langle \hat{c}, \sigma' \rangle}
+\]
+\[
+\text{(catch-nt)} \frac{\langle c, \sigma \rangle \to \langle c', \sigma' \rangle}{\langle \mathbf{catchin} \ c \ \mathbf{with} \ \hat{c}, \sigma \rangle \to \langle \mathbf{catchin} \ c' \ \mathbf{with} \ \hat{c}, \sigma' \rangle}
+\]
+
+\subsection{Propiedades de las Ejecuciones}
+
+\begin{itemize}
+    \item \textbf{Progreso:} Para todo $\langle c, \sigma \rangle$ existe $\gamma$ tal que $\langle c, \sigma \rangle \to \gamma$.
+    \item \textbf{Determinismo:} Si $\langle c, \sigma \rangle \to \gamma$ y $\langle c, \sigma \rangle \to \gamma'$, entonces $\gamma = \gamma'$.
+    \item \textbf{Función:} La relación $\to$ define una función de $\Gamma_{NT}$ a $\Gamma$.
+\end{itemize}
+
+\subsection{Ejecución Formal}
+
+Definimos $\to^*$ como la clausura reflexiva y transitiva de $\to$:
+
+\[
+\text{(refl)} \frac{}{\gamma \to^* \gamma}
+\qquad
+\text{(paso)} \frac{\gamma \to \gamma'}{\gamma \to^* \gamma'}
+\]
+\[
+\text{(trans)} \frac{\gamma_1 \to^* \gamma_2 \quad \gamma_2 \to^* \gamma_3}{\gamma_1 \to^* \gamma_3}
+\]
+
+Una ejecución es una secuencia maximal de transiciones. Es decir, $\rho : \gamma_0 \to^* \gamma_n$ es maximal si $\gamma_n$ es una configuración terminal o si $\rho$ es infinita.
+
+Si $\rho$ es una secuencia infinita decimos que diverge y escribimos $\gamma \uparrow$. Definimos una nueva semántica usando la ejecución:
+
+\[
+\{\![\_]\!\} : \langle comm \rangle \to \Sigma \to \Sigma'
+\]
+\[
+\{\![c]\!\} \sigma = 
+\begin{cases} 
+\perp & \text{si } \langle c, \sigma \rangle \uparrow \\
+\gamma & \text{si } \langle c, \sigma \rangle \to^* \gamma \in \Gamma_T 
+\end{cases}
+\]
 
 \end{document}
