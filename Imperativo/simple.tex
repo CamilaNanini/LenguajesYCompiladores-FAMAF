@@ -403,6 +403,36 @@ f_{\dagger}(\langle n_0, \dots, n_{k-1}, \dots \rangle) &= \langle n_0, \dots, n
 \]
 
 \section{Funciones Inyectoras y Constructores}
+En semántica denotacional, las funciones iota ($\iota$) son piezas fundamentales para construir y navegar por dominios compuestos. Que nos permiten meter un valor simple dentro de una estructura mucho más compleja (una unión disjunta) sin que se pierda su identidad.
+
+En términos técnicos, se llaman inyecciones canónicas, y su función principal es el ajuste de tipos para que el lenguaje formal sea coherente.
+
+1. El contenedor universal ($\Omega$)
+Imagina que el dominio $\Omega$ (el resultado de tu programa) es una caja que puede guardar cosas de naturalezas muy distintas:
+\begin{itemize}
+    \item Un estado de memoria (un diccionario de variables).
+    \item Un mensaje de error (un simple "abort").
+    \item Un número que sale por pantalla.
+    \item Una instrucción que espera que el usuario escriba algo.
+\end{itemize}
+
+Matemáticamente, no podes "sumar" un número con un diccionario. Sería como intentar sumar 5 peras + "Hola". Las funciones $\iota$ envuelven a cada elemento en un **empaque estándar** para que todos "midan" lo mismo y puedan vivir dentro de $\Omega$.
+
+2. Etiquetas invisibles
+Lo más importante de las iotas es que no solo mueven el valor, sino que le pegan una etiqueta invisible. 
+\begin{itemize}
+    \item $\iota_{norm}(\sigma)$ le dice al sistema: "Esto es un estado normal".
+    \item $\iota_{abnorm}(\sigma)$ le dice al sistema: "Esto es un estado de error".
+\end{itemize}
+
+Sin la iota, verías solo el estado $\sigma$ y no sabrías si es un resultado exitoso o un error. La iota permite que, más adelante, otras funciones puedan preguntar: ¿Qué etiqueta trae este valor? y actuar en consecuencia.
+
+3. ¿Por qué es necesario compararlos?
+Se necesitan en el mismo espacio para poder operar con ellos. En la semántica de comandos compuestos (como `c1 ; c2`):
+1.  El comando `c1` devuelve algo en el espacio $\Omega$.
+2.  El comando `c2` necesita saber si lo que devolvió `c1` fue un estado normal para seguir ejecutando, o si fue un error para detenerse.
+
+Si ambos resultados no estuvieran en el mismo espacio ($\Omega$), no podrías definir una sola función que maneje ambas posibilidades. Las iotas transforman la diversidad de resultados en un tipo de dato uniforme.
 
 \includegraphics[width=1\textwidth]{./iotas.png}
 \includegraphics[width=1\textwidth]{./reformulaciónSimple.png}

@@ -277,6 +277,61 @@ Sea $PA$ el conjunto de proposiciones atómicas.
 
 \textit{Nota sobre Expresividad:} Los lenguajes $\omega$-regulares son estrictamente más expresivos que LTL. Por ejemplo, el lenguaje $( (\emptyset + \{p\}) \{p\} )^\omega$ no puede ser expresado mediante una fórmula LTL.
 
+La relación entre los lenguajes de los sistemas, las fórmulas de lógica temporal (LTL) y los autómatas de Büchi es la base del \textbf{Model Checking}. Para entenderla detalladamente, es necesario desglosar cómo cada componente representa el comportamiento de un sistema y cómo se comparan entre sí.
+
+\subsection{1. ¿Qué es un Autómata de Büchi?}
+
+Un autómata de Büchi ($\mathcal{A}$) es similar a un autómata finito, pero está diseñado para aceptar \textbf{trazas infinitas} (palabras de longitud infinita o $\omega$-palabras). Se define por:
+\begin{itemize}
+    \item \textbf{Alfabeto ($\Sigma$):} Un conjunto finito de símbolos.
+    \item \textbf{Estados y Transiciones:} Un conjunto de estados con una función de transición.
+    \item \textbf{Condición de Aceptación:} A diferencia de los autómatas finitos que aceptan si terminan en un estado final, un autómata de Büchi acepta una traza si esta pasa por un \textbf{estado de aceptación infinitas veces}.
+\end{itemize}
+
+Los autómatas de Büchi aceptan exactamente los lenguajes $\omega$-regulares y son más expresivos que la lógica LTL.
+
+\subsection{2. El Sistema como un Autómata}
+
+Cualquier programa o sistema con estados finitos puede representarse como una \textbf{Estructura de Kripke} o sistema de transiciones $M$. Este sistema genera un conjunto de ejecuciones infinitas, y el conjunto de todas estas trazas posibles es el \textbf{lenguaje del sistema}, denotado como $\mathcal{L}(M)$.
+
+Para propósitos de verificación, este sistema $M$ puede verse directamente como un autómata de Büchi $A_P$ donde:
+\begin{itemize}
+    \item El alfabeto son los subconjuntos de proposiciones atómicas ($2^{PA}$).
+    \item \textbf{Todos los estados son de aceptación}, ya que nos interesan todas las ejecuciones posibles que el sistema pueda realizar de forma infinita.
+\end{itemize}
+
+\subsection{3. La Propiedad (LTL) como un Autómata}
+
+Cuando escribimos una fórmula LTL ($\phi$), esta define un conjunto de trazas infinitas que hacen verdadera a la fórmula. Este conjunto es el \textbf{lenguaje de la propiedad}, $\mathcal{L}(\phi)$.
+
+Un teorema fundamental establece que para toda fórmula LTL $\phi$, se puede construir un autómata de Büchi $A_\phi$ que acepte exactamente el mismo lenguaje:
+\[
+\mathcal{L}(A_\phi) = \mathcal{L}(\phi)
+\]
+
+\subsection{4. La Relación y el Problema del Model Checking}
+
+El objetivo del Model Checking es verificar si el sistema $M$ satisface la propiedad $\phi$ ($M \models \phi$). Esto ocurre si y solo si todas las trazas posibles del sistema están contenidas en el lenguaje de la propiedad:
+\[
+\mathcal{L}(M) \subseteq \mathcal{L}(\phi)
+\]
+
+Para verificar esta inclusión de forma automática, se utiliza la teoría de autómatas:
+\begin{enumerate}
+    \item \textbf{Complemento de la propiedad:} En lugar de verificar la inclusión directamente, se verifica si existe alguna traza en el sistema que \textbf{no} cumpla la propiedad. Esto es equivalente a ver si la intersección entre el sistema y la negación de la propiedad es vacía:
+    \[
+    \mathcal{L}(A_P) \cap \mathcal{L}(A_{\neg \phi}) = \emptyset
+    \]
+
+    \item \textbf{Construcción del producto:} Se construye un autómata producto que representa los comportamientos comunes entre el sistema y el autómata de la propiedad negada ($A_{\neg \phi}$).
+
+    \item \textbf{Búsqueda de vaciedad:} Se utiliza un algoritmo (como un doble DFS) para buscar si existe algún ciclo que contenga un estado de aceptación en este autómata producto.
+    \begin{itemize}
+        \item Si el lenguaje es \textbf{vacío}, la propiedad se cumple.
+        \item Si \textbf{no es vacío}, cualquier traza aceptada es un \textbf{contraejemplo}.
+    \end{itemize}
+\end{enumerate}
+
 \section{Leyes y Equivalencias}
 Estas leyes permiten simplificar o transformar fórmulas lógicas manteniendo su validez.
 \begin{itemize}
@@ -298,9 +353,42 @@ Estas leyes permiten simplificar o transformar fórmulas lógicas manteniendo su
     \item $\Diamond \Box \Diamond \phi \equiv \Box \Diamond \phi$
     \item $\Box \Diamond \Box \phi \equiv \Diamond \Box \phi$
 \end{itemize}
+
 \section{Fairness}
 \begin{itemize}
     \item Weak fairness: $\Diamond \Box \phi \rightarrow \Box \Diamond \psi \equiv \Box (\Box \phi \rightarrow \Diamond \psi)$
     \item Strong fairness: $\Box \Diamond \phi \rightarrow \Box \Diamond \psi \equiv \Box (\Box \Diamond \phi \rightarrow \Diamond \psi)$
 \end{itemize}
+El concepto de \textit{Fairness} se usa para garantizar que, en una ejecución con múltiples procesos, todos reciban la oportunidad de progresar y no se queden ``bloqueados'' por decisiones arbitrarias del planificador (\textit{scheduler}).
+
+\subsection{1. Weak Fairness (Equidad Débil)}
+
+Se refiere a la idea de que si una acción está habilitada (lista para ejecutarse) de forma \textit{continua e ininterrumpida}, entonces eventualmente debe ocurrir.
+
+\begin{itemize}
+    \item \textit{La condición:} La acción no puede ``parpadear'' o desactivarse; debe estar disponible todo el tiempo.
+    
+    \item \textit{En LTL:} Se suele expresar como
+    \[
+    \lozenge \square (\text{habilitada}) \rightarrow \square \lozenge (\text{ejecutada})
+    \]
+    
+    \item \textit{Ejemplo cotidiano:} Imagina que estás frente a una puerta automática. La puerta solo se abre si te quedas parado frente al sensor sin moverte. Si te retiras aunque sea un segundo, la condición se rompe y la ``promesa'' de que se abrirá ya no aplica bajo la equidad débil.
+\end{itemize}
+
+\subsection{2. Strong Fairness (Equidad Fuerte)}
+
+Es una condición mucho más exigente. Establece que si una acción está habilitada de forma \textit{infinitamente frecuente} (aunque sea de forma intermitente), entonces eventualmente debe ocurrir.
+
+\begin{itemize}
+    \item \textit{La condición:} No importa si la acción se deshabilita temporalmente; mientras vuelva a estar lista una y otra vez, el sistema debe elegirla en algún momento.
+    
+    \item \textit{En LTL:} Se expresa como
+    \[
+    \square \lozenge (\text{habilitada}) \rightarrow \square \lozenge (\text{ejecutada})
+    \]
+    
+    \item \textit{Ejemplo cotidiano:} Imagina un semáforo. La luz verde no está encendida todo el tiempo, pero se enciende ``infinitas veces'' a lo largo del día. La equidad fuerte garantiza que, aunque la luz verde sea intermitente, eventualmente podrás cruzar.
+\end{itemize}
+
 \end{document}
